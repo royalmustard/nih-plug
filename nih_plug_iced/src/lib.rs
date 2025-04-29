@@ -89,9 +89,12 @@
 //! }
 //! ```
 
-use baseview::WindowScalePolicy;
+use ::baseview::WindowScalePolicy;
 use crossbeam::atomic::AtomicCell;
 use crossbeam::channel;
+use iced_baseview::futures::Subscription;
+use iced_baseview::window::WindowQueue;
+
 use nih_plug::params::persist::PersistentField;
 use nih_plug::prelude::{Editor, GuiContext};
 use serde::{Deserialize, Serialize};
@@ -167,7 +170,7 @@ pub trait IcedEditor: 'static + Send + Sync + Sized {
     fn new(
         initialization_fags: Self::InitializationFlags,
         context: Arc<dyn GuiContext>,
-    ) -> (Self, Command<Self::Message>);
+    ) -> (Self, Task<Self::Message>);
 
     /// Returns a reference to the GUI context.
     /// [`handle_param_message()`][Self::handle_param_message()] uses this to interact with the
@@ -181,7 +184,7 @@ pub trait IcedEditor: 'static + Send + Sync + Sized {
         &mut self,
         window: &mut WindowQueue,
         message: Self::Message,
-    ) -> Command<Self::Message>;
+    ) -> Task<Self::Message>;
 
     /// See [`Application::subscription`].
     fn subscription(
@@ -206,19 +209,19 @@ pub trait IcedEditor: 'static + Send + Sync + Sized {
         WindowScalePolicy::SystemScaleFactor
     }
 
-    /// See [`Application::renderer_settings`].
-    fn renderer_settings() -> iced_baseview::backend::settings::Settings {
-        iced_baseview::backend::settings::Settings {
-            // Enable some anti-aliasing by default. Since GUIs are likely very simple and most of
-            // the work will be on the CPU anyways this should not affect performance much.
-            antialiasing: Some(iced_baseview::backend::settings::Antialiasing::MSAAx4),
-            // Use Noto Sans as the default font as that renders a bit more cleanly than the default
-            // Lato font. This crate also contains other weights and versions of this font you can
-            // use for individual widgets.
-            default_font: Some(crate::assets::fonts::NOTO_SANS_REGULAR),
-            ..iced_baseview::backend::settings::Settings::default()
-        }
-    }
+    // /// See [`Application::renderer_settings`].
+    // fn renderer_settings() -> iced_baseview::renderer::Settings {
+    //     iced_baseview::settings::Settings {
+    //         // Enable some anti-aliasing by default. Since GUIs are likely very simple and most of
+    //         // the work will be on the CPU anyways this should not affect performance much.
+    //         antialiasing: Some(iced_baseview::backend::settings::Antialiasing::MSAAx4),
+    //         // Use Noto Sans as the default font as that renders a bit more cleanly than the default
+    //         // Lato font. This crate also contains other weights and versions of this font you can
+    //         // use for individual widgets.
+    //         default_font: Some(crate::assets::fonts::NOTO_SANS_REGULAR),
+    //         ..iced_baseview::backend::settings::Settings::default()
+    //     }
+    // }
 
     /// Handle a parameter update using the GUI context.
     fn handle_param_message(&self, message: ParamMessage) {

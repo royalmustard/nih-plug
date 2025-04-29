@@ -5,9 +5,9 @@ use crossbeam::channel;
 use nih_plug::prelude::GuiContext;
 use std::sync::Arc;
 
-use crate::futures::FutureExt;
+use futures::futures::FutureExt;
 use crate::{
-    futures, subscription, Application, Color, Command, Element, IcedEditor, ParameterUpdate,
+    futures, futures::subscription, Application, Color, Task, Element, IcedEditor, ParameterUpdate,
     Subscription, WindowQueue, WindowScalePolicy, WindowSubs,
 };
 
@@ -59,7 +59,7 @@ impl<E: IcedEditor> Application for IcedEditorWrapperApplication<E> {
 
     fn new(
         (context, parameter_updates_receiver, flags): Self::Flags,
-    ) -> (Self, Command<Self::Message>) {
+    ) -> (Self, Task<Self::Message>) {
         let (editor, command) = E::new(flags, context);
 
         (
@@ -74,16 +74,16 @@ impl<E: IcedEditor> Application for IcedEditorWrapperApplication<E> {
     #[inline]
     fn update(
         &mut self,
-        window: &mut WindowQueue,
+        //window: &mut WindowQueue,
         message: Self::Message,
-    ) -> Command<Self::Message> {
+    ) -> Task<Self::Message> {
         match message {
             Message::EditorMessage(message) => self
                 .editor
-                .update(window, message)
+                .update( message)
                 .map(Message::EditorMessage),
             // This message only exists to force a redraw
-            Message::ParameterUpdate => Command::none(),
+            Message::ParameterUpdate => Task::none(),
         }
     }
 
@@ -141,18 +141,36 @@ impl<E: IcedEditor> Application for IcedEditorWrapperApplication<E> {
         self.editor.view().map(Message::EditorMessage)
     }
 
-    #[inline]
-    fn background_color(&self) -> Color {
-        self.editor.background_color()
-    }
+    // #[inline]
+    // fn background_color(&self) -> Color {
+    //     self.editor.background_color()
+    // }
 
     #[inline]
     fn scale_policy(&self) -> WindowScalePolicy {
         self.editor.scale_policy()
     }
 
-    #[inline]
-    fn renderer_settings() -> iced_baseview::backend::settings::Settings {
-        E::renderer_settings()
+    // #[inline]
+    // fn renderer_settings() -> iced_baseview::backend::settings::Settings {
+    //     E::renderer_settings()
+    // }
+    
+    type Theme;
+    
+    fn theme(&self) -> Self::Theme {
+        todo!()
+    }
+    
+    fn title(&self) -> String {
+        "iced_baseview".into()
+    }
+    
+    fn style(&self, theme: &Self::Theme) -> iced_baseview::Appearance {
+        theme.default_style()
+    }
+    
+    fn ignore_non_modifier_keys(&self) -> Option<bool> {
+        None
     }
 }

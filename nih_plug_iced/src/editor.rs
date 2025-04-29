@@ -1,6 +1,6 @@
 //! And [`Editor`] implementation for iced.
 
-use baseview::{WindowOpenOptions, WindowScalePolicy};
+use ::baseview::{WindowOpenOptions, WindowScalePolicy};
 use crossbeam::atomic::AtomicCell;
 use crossbeam::channel;
 pub use iced_baseview::*;
@@ -33,17 +33,17 @@ unsafe impl HasRawWindowHandle for ParentWindowHandleAdapter {
     fn raw_window_handle(&self) -> RawWindowHandle {
         match self.0 {
             ParentWindowHandle::X11Window(window) => {
-                let mut handle = raw_window_handle::XcbHandle::empty();
+                let mut handle = raw_window_handle::XcbWindowHandle::empty();
                 handle.window = window;
                 RawWindowHandle::Xcb(handle)
             }
             ParentWindowHandle::AppKitNsView(ns_view) => {
-                let mut handle = raw_window_handle::AppKitHandle::empty();
+                let mut handle = raw_window_handle::AppKitWindowHandle::empty();
                 handle.ns_view = ns_view;
                 RawWindowHandle::AppKit(handle)
             }
             ParentWindowHandle::Win32Hwnd(hwnd) => {
-                let mut handle = raw_window_handle::Win32Handle::empty();
+                let mut handle = raw_window_handle::Win32WindowHandle::empty();
                 handle.hwnd = hwnd;
                 RawWindowHandle::Win32(handle)
             }
@@ -154,7 +154,7 @@ impl<E: IcedEditor> Editor for IcedEditorWrapper<E> {
 /// The window handle used for [`IcedEditorWrapper`].
 struct IcedEditorHandle<Message: 'static + Send> {
     iced_state: Arc<IcedState>,
-    window: iced_baseview::WindowHandle<Message>,
+    window: iced_baseview::window::WindowHandle<Message>,
 }
 
 /// The window handle enum stored within 'WindowHandle' contains raw pointers. Is there a way around
