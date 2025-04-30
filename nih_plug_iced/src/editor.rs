@@ -5,6 +5,7 @@ use crossbeam::atomic::AtomicCell;
 use crossbeam::channel;
 pub use iced_baseview::*;
 use nih_plug::prelude::{Editor, GuiContext, ParentWindowHandle};
+use nih_plug_assets::fonts;
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
@@ -62,8 +63,13 @@ impl<E: IcedEditor> Editor for IcedEditorWrapper<E> {
 
         // TODO: iced_baseview does not have gracefuly error handling for context creation failures.
         //       This will panic if the context could not be created.
-        let window = IcedWindow::<wrapper::IcedEditorWrapperApplication<E>>::open_parented(
+        let window = iced_baseview::open_parented(
             &ParentWindowHandleAdapter(parent),
+            (
+                context,
+                self.parameter_updates_receiver.clone(),
+                self.initialization_flags.clone(),
+            ),
             Settings {
                 window: WindowOpenOptions {
                     title: String::from("iced window"),
@@ -96,19 +102,15 @@ impl<E: IcedEditor> Editor for IcedEditorWrapper<E> {
                     // FIXME: Rust analyzer always thinks baseview/opengl is enabled even if we
                     //        don't explicitly enable it, so you'd get a compile error if this line
                     //        is missing
-                    #[cfg(not(feature = "opengl"))]
-                    gl_config: None,
+                    // #[cfg(not(feature = "opengl"))]
+                    // gl_config: None,
                 },
                 iced_baseview: IcedBaseviewSettings {
                     ignore_non_modifier_keys: false,
                     always_redraw: true,
                 },
-                // We use this wrapper to be able to pass the GUI context to the editor
-                flags: (
-                    context,
-                    self.parameter_updates_receiver.clone(),
-                    self.initialization_flags.clone(),
-                ),
+                graphics_settings: GraphicsSettings::default(),
+                fonts: fonts::NOTO_SANS_REGULAR,
             },
         );
 

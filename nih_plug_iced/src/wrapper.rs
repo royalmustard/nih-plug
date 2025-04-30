@@ -2,7 +2,7 @@
 //! `nih_plug_iced`.
 
 use crossbeam::channel;
-use iced_baseview::futures::subscription;
+use iced_baseview::Theme;
 use nih_plug::prelude::GuiContext;
 use std::sync::Arc;
 
@@ -10,8 +10,8 @@ use futures::futures::FutureExt;
 
 
 use crate::{
-    futures, Application, Color, Task, Element, IcedEditor, ParameterUpdate,
-    Subscription, WindowQueue, WindowScalePolicy, WindowSubs,
+    futures, Application, Task, Element, IcedEditor, ParameterUpdate,
+    Subscription, WindowScalePolicy, WindowSubs,
 };
 
 /// Wraps an `iced_baseview` [`Application`] around [`IcedEditor`]. Needed to allow editors to
@@ -52,6 +52,7 @@ impl<E: IcedEditor> Clone for Message<E> {
 }
 
 impl<E: IcedEditor> Application for IcedEditorWrapperApplication<E> {
+    type Theme = Theme;
     type Executor = E::Executor;
     type Message = Message<E>;
     type Flags = (
@@ -137,7 +138,7 @@ impl<E: IcedEditor> Application for IcedEditorWrapperApplication<E> {
     }
 
     #[inline]
-    fn view(&mut self) -> Element<'_, Self::Message> {
+    fn view(&self) -> Element<'_, Self::Message> {
         self.editor.view().map(Message::EditorMessage)
     }
 
@@ -156,10 +157,10 @@ impl<E: IcedEditor> Application for IcedEditorWrapperApplication<E> {
     //     E::renderer_settings()
     // }
     
-    type Theme;
+    
     
     fn theme(&self) -> Self::Theme {
-        todo!()
+        
     }
     
     fn title(&self) -> String {

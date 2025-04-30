@@ -93,7 +93,6 @@ use crate::baseview::WindowScalePolicy;
 use crossbeam::atomic::AtomicCell;
 use crossbeam::channel;
 use iced_baseview::futures::Subscription;
-use iced_baseview::window::WindowQueue;
 
 use nih_plug::params::persist::PersistentField;
 use nih_plug::prelude::{Editor, GuiContext};
@@ -182,7 +181,7 @@ pub trait IcedEditor: 'static + Send + Sync + Sized {
     /// [`handle_param_message()`][Self::handle_param_message()] to handle the parameter update.
     fn update(
         &mut self,
-        window: &mut WindowQueue,
+        //window: &mut WindowQueue,
         message: Self::Message,
     ) -> Task<Self::Message>;
 
