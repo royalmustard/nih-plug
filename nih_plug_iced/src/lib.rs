@@ -89,7 +89,7 @@
 //! }
 //! ```
 
-use ::baseview::WindowScalePolicy;
+use crate::baseview::WindowScalePolicy;
 use crossbeam::atomic::AtomicCell;
 use crossbeam::channel;
 use iced_baseview::futures::Subscription;

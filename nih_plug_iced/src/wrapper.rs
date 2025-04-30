@@ -2,12 +2,15 @@
 //! `nih_plug_iced`.
 
 use crossbeam::channel;
+use iced_baseview::futures::subscription;
 use nih_plug::prelude::GuiContext;
 use std::sync::Arc;
 
 use futures::futures::FutureExt;
+
+
 use crate::{
-    futures, futures::subscription, Application, Color, Task, Element, IcedEditor, ParameterUpdate,
+    futures, Application, Color, Task, Element, IcedEditor, ParameterUpdate,
     Subscription, WindowQueue, WindowScalePolicy, WindowSubs,
 };
 
@@ -80,7 +83,7 @@ impl<E: IcedEditor> Application for IcedEditorWrapperApplication<E> {
         match message {
             Message::EditorMessage(message) => self
                 .editor
-                .update( message)
+                .update(message)
                 .map(Message::EditorMessage),
             // This message only exists to force a redraw
             Message::ParameterUpdate => Task::none(),
@@ -103,22 +106,19 @@ impl<E: IcedEditor> Application for IcedEditorWrapperApplication<E> {
                 _ => None,
             },
         };
-
+        let rcv = self.parameter_updates_receiver.clone();
         let subscription = Subscription::batch([
             // For some reason there's no adapter to just convert `futures::channel::mpsc::Receiver`
             // into a stream that doesn't require consuming that receiver (which wouldn't work in
             // this case since the subscriptions function gets called repeatedly). So we'll just use
             // a crossbeam queue and this unfold instead.
-            subscription::unfold(
+            Subscription::run_with_id(
                 "parameter updates",
-                self.parameter_updates_receiver.clone(),
-                |parameter_updates_receiver| match parameter_updates_receiver.try_recv() {
-                    Ok(_) => futures::future::ready((
-                        Some(Message::ParameterUpdate),
-                        parameter_updates_receiver,
-                    ))
+                || match rcv.try_recv() {
+                    Ok(_) => futures::futures::future::ready(
+                        Some(Message::ParameterUpdate))
                     .boxed(),
-                    Err(_) => futures::future::pending().boxed(),
+                    Err(_) => futures::futures::future::pending().boxed(),
                 },
             ),
             self.editor
