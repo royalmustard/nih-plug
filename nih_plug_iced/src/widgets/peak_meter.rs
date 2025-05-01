@@ -1,17 +1,38 @@
 //! A super simple peak meter widget.
 
 use crossbeam::atomic::AtomicCell;
+use iced_baseview::alignment;
+use iced_baseview::border::Radius;
+use iced_baseview::core::layout;
+use iced_baseview::core::renderer::Style;
+use iced_baseview::core::text;
+use iced_baseview::core::text::LineHeight;
+use iced_baseview::core::text::Shaping;
+use iced_baseview::core::text::Wrapping;
+use iced_baseview::core::widget::Tree;
+use iced_baseview::core::Layout;
+use iced_baseview::core::Widget;
+use iced_baseview::mouse::Cursor;
+use iced_baseview::core::renderer;
+use iced_baseview::Background;
+use iced_baseview::Border;
+use iced_baseview::Color;
+use iced_baseview::Element;
+use iced_baseview::Font;
+use iced_baseview::Length;
+use iced_baseview::Rectangle;
+use iced_baseview::Renderer;
+use iced_baseview::Shadow;
+use iced_baseview::Size;
+use iced_baseview::Theme;
 use std::marker::PhantomData;
 use std::time::Duration;
 use std::time::Instant;
 
-use crate::backend::Renderer;
-use crate::renderer::Renderer as GraphicsRenderer;
-use crate::text::Renderer as TextRenderer;
-use crate::{
-    alignment, layout, renderer, text, Background, Color, Element, Font, Layout, Length, Point,
-    Rectangle, Size, Widget,
-};
+use crate::assets;
+
+
+
 
 /// The thickness of this widget's borders.
 const BORDER_WIDTH: f32 = 1.0;
@@ -64,7 +85,7 @@ impl<'a, Message> PeakMeter<'a, Message> {
             width: Length::Units(180),
             height: Length::Units(30),
             text_size: None,
-            font: <Renderer as TextRenderer>::Font::default(),
+            font: assets::NOTO_SANS_REGULAR,
 
             _phantom: PhantomData,
         }
@@ -101,31 +122,27 @@ impl<'a, Message> PeakMeter<'a, Message> {
     }
 }
 
-impl<'a, Message> Widget<Message, Renderer> for PeakMeter<'a, Message>
+impl<'a, Message> Widget<Message, Theme, Renderer> for PeakMeter<'a, Message>
 where
     Message: Clone,
 {
-    fn width(&self) -> Length {
-        self.width
-    }
 
-    fn height(&self) -> Length {
-        self.height
-    }
 
-    fn layout(&self, _renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
+    fn layout(&self, tree: &mut Tree, _renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
         let limits = limits.width(self.width).height(self.height);
-        let size = limits.resolve(Size::ZERO);
+        let size = limits.resolve(self.width, self.height, Size::ZERO);
 
         layout::Node::new(size)
     }
 
     fn draw(
         &self,
+        tree: &Tree,
         renderer: &mut Renderer,
-        style: &renderer::Style,
+        theme: &Theme,
+        style: &Style,
         layout: Layout<'_>,
-        _cursor_position: Point,
+        _cursor_position: Cursor,
         _viewport: &Rectangle,
     ) {
         let bounds = layout.bounds();
@@ -181,9 +198,18 @@ where
             renderer.fill_quad(
                 renderer::Quad {
                     bounds: tick_bounds,
-                    border_radius: 0.0,
-                    border_width: 0.0,
-                    border_color: Color::TRANSPARENT,
+                    border: Border{
+                        color: Color::TRANSPARENT,
+                        width: 0.0,
+                        radius: Radius
+                        {
+                            top_left: 0.0,
+                            top_right: 0.0,
+                            bottom_left: 0.0,
+                            bottom_right: 0.0
+                        }
+                    },
+                    shadow: Shadow::default()
                 },
                 Background::Color(tick_color),
             );
@@ -211,9 +237,18 @@ where
                         width: TICK_WIDTH,
                         height: bar_bounds.height - (BORDER_WIDTH * 2.0),
                     },
-                    border_radius: 0.0,
-                    border_width: 0.0,
-                    border_color: Color::TRANSPARENT,
+                    border: Border{
+                        color: Color::TRANSPARENT,
+                        width: 0.0,
+                        radius: Radius
+                        {
+                            top_left: 0.0,
+                            top_right: 0.0,
+                            bottom_left: 0.0,
+                            bottom_right: 0.0
+                        }
+                    },
+                    shadow: Shadow::default()
                 },
                 Background::Color(Color::from_rgb(0.3, 0.3, 0.3)),
             );
@@ -223,11 +258,19 @@ where
         renderer.fill_quad(
             renderer::Quad {
                 bounds: bar_bounds,
-                border_radius: 0.0,
-                border_width: BORDER_WIDTH,
-                border_color: Color::BLACK,
+                border: Border{
+                    color: Color::BLACK,
+                    width: BORDER_WIDTH,
+                    radius: Radius
+                    {
+                        top_left: 0.0,
+                        top_right: 0.0,
+                        bottom_left: 0.0,
+                        bottom_right: 0.0
+                    }
             },
-            Background::Color(Color::TRANSPARENT),
+            shadow: Shadow::default() },
+            Background::Color(Color::TRANSPARENT)
         );
 
         // Beneath the bar we want to draw the names of the ticks
@@ -242,9 +285,18 @@ where
                         width: TICK_WIDTH,
                         height: ticks_bounds.height * 0.3,
                     },
-                    border_radius: 0.0,
-                    border_width: 0.0,
-                    border_color: Color::TRANSPARENT,
+                    border: Border{
+                        color: Color::TRANSPARENT,
+                        width: 0.0,
+                        radius: Radius
+                        {
+                            top_left: 0.0,
+                            top_right: 0.0,
+                            bottom_left: 0.0,
+                            bottom_right: 0.0
+                        }
+                    },
+                    shadow: Shadow::default()
                 },
                 Background::Color(Color::from_rgb(0.3, 0.3, 0.3)),
             );
@@ -263,9 +315,12 @@ where
                     y: ticks_bounds.y + (ticks_bounds.height * 0.35),
                     ..ticks_bounds
                 },
-                color: style.text_color,
+                //color: style.text_color,
                 horizontal_alignment: alignment::Horizontal::Center,
                 vertical_alignment: alignment::Vertical::Top,
+                line_height: LineHeight::default(),
+                shaping: Shaping::Basic,
+                wrapping: Wrapping::None
             });
         }
 
@@ -283,10 +338,16 @@ where
                 y: ticks_bounds.y + (ticks_bounds.height * 0.35),
                 ..ticks_bounds
             },
-            color: style.text_color,
             horizontal_alignment: alignment::Horizontal::Left,
             vertical_alignment: alignment::Vertical::Top,
+            line_height: LineHeight::default(),
+            shaping: Shaping::Basic,
+            wrapping: Wrapping::None
         });
+    }
+    
+    fn size(&self) -> iced_baseview::Size<Length> {
+        todo!()
     }
 }
 
