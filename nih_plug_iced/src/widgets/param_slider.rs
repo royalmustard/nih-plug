@@ -1,17 +1,58 @@
 //! A slider that integrates with NIH-plug's [`Param`] types.
 
 use atomic_refcell::AtomicRefCell;
+use iced_baseview::core::text::LineHeight;
+use iced_baseview::core::touch;
+use iced_baseview::core::Clipboard;
+use iced_baseview::event;
+use iced_baseview::mouse::Cursor;
+use iced_baseview::Border;
+use iced_baseview::Event;
+
+use iced_baseview::core::Shell;
+use iced_baseview::graphics::text::Paragraph;
+use iced_baseview::keyboard;
+
+use iced_baseview::widget;
+use iced_baseview::widget::text_input::Status;
+use iced_baseview::widget::TextInput;
+use iced_baseview::Vector;
 use nih_plug::prelude::Param;
 use std::borrow::Borrow;
 
-use crate::backend::widget;
-use crate::backend::Renderer;
-use crate::renderer::Renderer as GraphicsRenderer;
-use crate::text::Renderer as TextRenderer;
-use crate::{
-    alignment, event, keyboard, layout, mouse, renderer, text, touch, Background, Clipboard, Color,
-    Element, Event, Font, Layout, Length, Point, Rectangle, Shell, Size, TextInput, Vector, Widget,
-};
+use iced_baseview::alignment;
+
+use iced_baseview::core::layout;
+use iced_baseview::core::mouse;
+use iced_baseview::core::renderer::Style;
+use iced_baseview::core::text;
+
+use iced_baseview::core::widget::Tree;
+use iced_baseview::core::Layout;
+use iced_baseview::core::Widget;
+
+use iced_baseview::core::renderer;
+use iced_baseview::Background;
+
+use iced_baseview::Color;
+use iced_baseview::Element;
+use iced_baseview::Font;
+use iced_baseview::Length;
+use iced_baseview::Rectangle;
+use iced_baseview::Renderer;
+
+use iced_baseview::Size;
+use iced_baseview::Theme;
+// use crate::backend::widget;
+// use crate::backend::Renderer;
+// use crate::renderer::Renderer as GraphicsRenderer;
+// use crate::text::Renderer as TextRenderer;
+// use crate::{
+//     alignment, event, keyboard, layout, mouse, renderer, text, touch, Background, Clipboard, Color,
+//     Element, Event, Font, Layout, Length, Point, Rectangle, Shell, Size, TextInput, Vector, Widget,
+// };
+
+use crate::assets;
 
 use super::util;
 use super::ParamMessage;
@@ -52,7 +93,7 @@ pub struct State {
     last_click: Option<mouse::Click>,
 
     /// State for the text input overlay that will be shown when this widget is alt+clicked.
-    text_input_state: AtomicRefCell<widget::text_input::State>,
+    text_input_state: AtomicRefCell<widget::text_input::State<Paragraph>>,
     /// The text that's currently in the text input. If this is set to `None`, then the text input
     /// is not visible.
     text_input_value: Option<String>,
@@ -68,32 +109,44 @@ enum TextInputMessage {
 }
 
 /// The default text input style with the border removed.
-struct TextInputStyle;
+// struct TextInputStyle;
 
-impl widget::text_input::StyleSheet for TextInputStyle {
-    fn active(&self) -> widget::text_input::Style {
-        widget::text_input::Style {
-            background: Background::Color(Color::TRANSPARENT),
-            border_radius: 0.0,
-            border_width: 0.0,
-            border_color: Color::TRANSPARENT,
-        }
-    }
+// impl widget::text_input::StyleSheet for TextInputStyle {
+//     fn active(&self) -> widget::text_input::Style {
+//         widget::text_input::Style {
+//             background: Background::Color(Color::TRANSPARENT),
+//             border_radius: 0.0,
+//             border_width: 0.0,
+//             border_color: Color::TRANSPARENT,
+//         }
+//     }
 
-    fn focused(&self) -> widget::text_input::Style {
-        self.active()
-    }
+//     fn focused(&self) -> widget::text_input::Style {
+//         self.active()
+//     }
 
-    fn placeholder_color(&self) -> Color {
-        Color::from_rgb(0.7, 0.7, 0.7)
-    }
+//     fn placeholder_color(&self) -> Color {
+//         Color::from_rgb(0.7, 0.7, 0.7)
+//     }
 
-    fn value_color(&self) -> Color {
-        Color::from_rgb(0.3, 0.3, 0.3)
-    }
+//     fn value_color(&self) -> Color {
+//         Color::from_rgb(0.3, 0.3, 0.3)
+//     }
 
-    fn selection_color(&self) -> Color {
-        Color::from_rgb(0.8, 0.8, 1.0)
+//     fn selection_color(&self) -> Color {
+//         Color::from_rgb(0.8, 0.8, 1.0)
+//     }
+// }
+
+fn text_input_style(theme: &Theme, status: Status) -> Style
+{
+    widget::text_input::Style {
+        background: Background::Color(Color::TRANSPARENT),
+        border: Default::default(),
+        icon: Default::default(),
+        placeholder: Color::from_rgb(0.7, 0.7, 0.7),
+        value: Color::from_rgb(0.3, 0.3, 0.3),
+        selection: Color::from_rgb(0.8, 0.8, 1.0)
     }
 }
 
@@ -108,7 +161,7 @@ impl<'a, P: Param> ParamSlider<'a, P> {
             width: Length::Units(180),
             height: Length::Units(30),
             text_size: None,
-            font: <Renderer as TextRenderer>::Font::default(),
+            font: assets::NOTO_SANS_REGULAR,
         }
     }
 
@@ -153,15 +206,14 @@ impl<'a, P: Param> ParamSlider<'a, P> {
             .borrow()
             .measure_width(current_value, text_size, self.font);
         let text_input = TextInput::new(
-            &mut text_input_state,
             "",
             current_value,
-            TextInputMessage::Value,
         )
+        .on_input(TextInputMessage::Value)
         .font(self.font)
         .size(text_size)
         .width(Length::Units(text_width.ceil() as u16))
-        .style(TextInputStyle)
+        .style(text_input_style)
         .on_submit(TextInputMessage::Submit);
 
         // Make sure to not draw over the borders, and center the text
@@ -204,30 +256,36 @@ impl<'a, P: Param> ParamSlider<'a, P> {
     }
 }
 
-impl<'a, P: Param> Widget<ParamMessage, Renderer> for ParamSlider<'a, P> {
-    fn width(&self) -> Length {
-        self.width
+impl<'a, P: Param> Widget<ParamMessage, Theme, Renderer> for ParamSlider<'a, P> {
+    // fn width(&self) -> Length {
+    //     self.width
+    // }
+
+    // fn height(&self) -> Length {
+    //     self.height
+    // }
+
+    fn size(&self) -> Size<Length> {
+        Size { width: self.width, height: self.height }
     }
 
-    fn height(&self) -> Length {
-        self.height
-    }
-
-    fn layout(&self, _renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
+    fn layout(&self, tree: &mut Tree, _renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
         let limits = limits.width(self.width).height(self.height);
-        let size = limits.resolve(Size::ZERO);
+        let size = limits.resolve(0.0, 0.0, 0.0);
 
         layout::Node::new(size)
     }
 
     fn on_event(
         &mut self,
+        _state: &mut Tree,
         event: Event,
         layout: Layout<'_>,
-        cursor_position: Point,
+        cursor: Cursor,
         renderer: &Renderer,
         clipboard: &mut dyn Clipboard,
         shell: &mut Shell<'_, ParamMessage>,
+        viewport: &Rectangle
     ) -> event::Status {
         // The pressence of a value in `self.state.text_input_value` indicates that the field should
         // be focussed. The field handles defocussing by itself
@@ -245,12 +303,14 @@ impl<'a, P: Param> Widget<ParamMessage, Renderer> for ParamSlider<'a, P> {
                 current_value,
                 |mut text_input, layout, renderer| {
                     text_input.on_event(
+                        _state,
                         event,
                         layout,
-                        cursor_position,
+                        cursor,
                         renderer,
                         clipboard,
                         &mut text_input_shell,
+                        viewport
                     )
                 },
             );
@@ -302,8 +362,8 @@ impl<'a, P: Param> Widget<ParamMessage, Renderer> for ParamSlider<'a, P> {
         match event {
             Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))
             | Event::Touch(touch::Event::FingerPressed { .. }) => {
-                if bounds.contains(cursor_position) {
-                    let click = mouse::Click::new(cursor_position, self.state.last_click);
+                if bounds.contains(cursor.position()) {
+                    let click = mouse::Click::new(cursor.position(), mouse::Button::Left, self.state.last_click);
                     self.state.last_click = Some(click);
                     if self.state.keyboard_modifiers.alt() {
                         // Alt+click should not start a drag, instead it should show the text entry
@@ -331,14 +391,14 @@ impl<'a, P: Param> Widget<ParamMessage, Renderer> for ParamSlider<'a, P> {
                         // When holding down shift while clicking on a parameter we want to
                         // granuarly edit the parameter without jumping to a new value
                         self.state.granular_drag_start_x_value =
-                            Some((cursor_position.x, self.param.modulated_normalized_value()));
+                            Some((cursor.position().x, self.param.modulated_normalized_value()));
                     } else {
                         shell.publish(ParamMessage::BeginSetParameter(self.param.as_ptr()));
                         self.state.drag_active = true;
 
                         self.set_normalized_value(
                             shell,
-                            util::remap_rect_x_coordinate(&bounds, cursor_position.x),
+                            util::remap_rect_x_coordinate(&bounds, cursor.position().x),
                         );
                         self.state.granular_drag_start_x_value = None;
                     }
@@ -367,7 +427,7 @@ impl<'a, P: Param> Widget<ParamMessage, Renderer> for ParamSlider<'a, P> {
                             .state
                             .granular_drag_start_x_value
                             .get_or_insert_with(|| {
-                                (cursor_position.x, self.param.modulated_normalized_value())
+                                (cursor.position().x, self.param.modulated_normalized_value())
                             });
 
                         self.set_normalized_value(
@@ -375,7 +435,7 @@ impl<'a, P: Param> Widget<ParamMessage, Renderer> for ParamSlider<'a, P> {
                             util::remap_rect_x_coordinate(
                                 &bounds,
                                 util::remap_rect_x_t(&bounds, drag_start_value)
-                                    + (cursor_position.x - drag_start_x) * GRANULAR_DRAG_MULTIPLIER,
+                                    + (cursor.position().x - drag_start_x) * GRANULAR_DRAG_MULTIPLIER,
                             ),
                         );
                     } else {
@@ -383,7 +443,7 @@ impl<'a, P: Param> Widget<ParamMessage, Renderer> for ParamSlider<'a, P> {
 
                         self.set_normalized_value(
                             shell,
-                            util::remap_rect_x_coordinate(&bounds, cursor_position.x),
+                            util::remap_rect_x_coordinate(&bounds, cursor.position().x),
                         );
                     }
 
@@ -403,7 +463,7 @@ impl<'a, P: Param> Widget<ParamMessage, Renderer> for ParamSlider<'a, P> {
 
                     self.set_normalized_value(
                         shell,
-                        util::remap_rect_x_coordinate(&bounds, cursor_position.x),
+                        util::remap_rect_x_coordinate(&bounds, cursor.position().x),
                     );
                 }
 
@@ -417,13 +477,14 @@ impl<'a, P: Param> Widget<ParamMessage, Renderer> for ParamSlider<'a, P> {
 
     fn mouse_interaction(
         &self,
+        state: &Tree,
         layout: Layout<'_>,
-        cursor_position: Point,
+        cursor: Cursor,
         _viewport: &Rectangle,
         _renderer: &Renderer,
     ) -> mouse::Interaction {
         let bounds = layout.bounds();
-        let is_mouse_over = bounds.contains(cursor_position);
+        let is_mouse_over = bounds.contains(cursor.position());
 
         if is_mouse_over {
             mouse::Interaction::Pointer
@@ -434,11 +495,13 @@ impl<'a, P: Param> Widget<ParamMessage, Renderer> for ParamSlider<'a, P> {
 
     fn draw(
         &self,
+        tree: &Tree,
         renderer: &mut Renderer,
+        theme: &Theme,
         style: &renderer::Style,
         layout: Layout<'_>,
-        cursor_position: Point,
-        _viewport: &Rectangle,
+        cursor: Cursor,
+        viewport: &Rectangle,
     ) {
         let bounds = layout.bounds();
         // I'm sure there's some philosophical meaning behind this
@@ -448,7 +511,7 @@ impl<'a, P: Param> Widget<ParamMessage, Renderer> for ParamSlider<'a, P> {
             width: bounds.width - (BORDER_WIDTH * 2.0),
             height: bounds.height - (BORDER_WIDTH * 2.0),
         };
-        let is_mouse_over = bounds.contains(cursor_position);
+        let is_mouse_over = bounds.contains(cursor.position());
 
         // The bar itself, show a different background color when the value is being edited or when
         // the mouse is hovering over it to indicate that it's interactive
@@ -462,9 +525,12 @@ impl<'a, P: Param> Widget<ParamMessage, Renderer> for ParamSlider<'a, P> {
         renderer.fill_quad(
             renderer::Quad {
                 bounds,
-                border_color: Color::BLACK,
-                border_width: BORDER_WIDTH,
-                border_radius: 0.0,
+                border: Border{
+                    color: Color::BLACK,
+                    width: BORDER_WIDTH,
+                    radius: Default::default()
+                }, 
+                shadow: Default::default()
             },
             background_color,
         );
@@ -477,7 +543,7 @@ impl<'a, P: Param> Widget<ParamMessage, Renderer> for ParamSlider<'a, P> {
                 renderer,
                 current_value,
                 |text_input, layout, renderer| {
-                    text_input.draw(renderer, layout, cursor_position, None)
+                    text_input.draw(tree, renderer, theme, layout, cursor, None, viewport)
                 },
             )
         } else {
@@ -505,9 +571,12 @@ impl<'a, P: Param> Widget<ParamMessage, Renderer> for ParamSlider<'a, P> {
             renderer.fill_quad(
                 renderer::Quad {
                     bounds: fill_rect,
-                    border_color: Color::TRANSPARENT,
-                    border_width: 0.0,
-                    border_radius: 0.0,
+                    border: Border{
+                        color: Color::TRANSPARENT,
+                        width: 0.0,
+                        radius: Default::default()
+                    }, 
+                    shadow: Default::default()
                 },
                 fill_color,
             );
@@ -526,9 +595,12 @@ impl<'a, P: Param> Widget<ParamMessage, Renderer> for ParamSlider<'a, P> {
                 font: self.font,
                 size: text_size,
                 bounds: text_bounds,
-                color: style.text_color,
+                //color: style.text_color,
                 horizontal_alignment: alignment::Horizontal::Center,
                 vertical_alignment: alignment::Vertical::Center,
+                line_height: LineHeight::default(),
+                shaping: text::Shaping::Basic,
+                wrapping: text::Wrapping::None,
             });
 
             // This will clip to the filled area
@@ -539,13 +611,18 @@ impl<'a, P: Param> Widget<ParamMessage, Renderer> for ParamSlider<'a, P> {
                     font: self.font,
                     size: text_size,
                     bounds: text_bounds,
-                    color: filled_text_color,
+                    //color: filled_text_color,
                     horizontal_alignment: alignment::Horizontal::Center,
                     vertical_alignment: alignment::Vertical::Center,
+                    line_height: LineHeight::default(),
+                    shaping: text::Shaping::Basic,
+                    wrapping: text::Wrapping::None,
                 });
             });
         }
     }
+    
+   
 }
 
 impl<'a, P: Param> ParamSlider<'a, P> {
