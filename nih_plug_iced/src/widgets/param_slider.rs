@@ -8,7 +8,7 @@ use iced_baseview::event;
 use iced_baseview::mouse::Cursor;
 use iced_baseview::Border;
 use iced_baseview::Event;
-
+use iced_baseview::core::Renderer as GraphicsRenderer;
 use iced_baseview::core::Shell;
 use iced_baseview::graphics::text::Paragraph;
 use iced_baseview::keyboard;
@@ -24,7 +24,7 @@ use iced_baseview::alignment;
 
 use iced_baseview::core::layout;
 use iced_baseview::core::mouse;
-use iced_baseview::core::renderer::Style;
+use iced_baseview::core::text::Renderer as TextRenderer;
 use iced_baseview::core::text;
 
 use iced_baseview::core::widget::Tree;
@@ -138,7 +138,7 @@ enum TextInputMessage {
 //     }
 // }
 
-fn text_input_style(theme: &Theme, status: Status) -> Style
+fn text_input_style(theme: &Theme, status: Status) -> widget::text_input::Style
 {
     widget::text_input::Style {
         background: Background::Color(Color::TRANSPARENT),
@@ -158,8 +158,8 @@ impl<'a, P: Param> ParamSlider<'a, P> {
 
             param,
 
-            width: Length::Units(180),
-            height: Length::Units(30),
+            width: Length::from(180),
+            height: Length::from(30),
             text_size: None,
             font: assets::NOTO_SANS_REGULAR,
         }
@@ -201,10 +201,10 @@ impl<'a, P: Param> ParamSlider<'a, P> {
 
         let text_size = self
             .text_size
-            .unwrap_or_else(|| renderer.borrow().default_size());
-        let text_width = renderer
-            .borrow()
-            .measure_width(current_value, text_size, self.font);
+            .unwrap_or_else(|| renderer.borrow().default_size().0 as u16);
+        // let text_width = renderer
+        //     .borrow()
+        //     .measure_width(current_value, text_size, self.font);
         let text_input = TextInput::new(
             "",
             current_value,
@@ -212,10 +212,11 @@ impl<'a, P: Param> ParamSlider<'a, P> {
         .on_input(TextInputMessage::Value)
         .font(self.font)
         .size(text_size)
-        .width(Length::Units(text_width.ceil() as u16))
+        //.width(Length::Units(text_width.ceil() as u16))
         .style(text_input_style)
         .on_submit(TextInputMessage::Submit);
-
+        //TODO: find method to predict text width
+        let text_width = layout.bounds().width;
         // Make sure to not draw over the borders, and center the text
         let offset_node = layout::Node::with_children(
             Size {
@@ -271,7 +272,7 @@ impl<'a, P: Param> Widget<ParamMessage, Theme, Renderer> for ParamSlider<'a, P> 
 
     fn layout(&self, tree: &mut Tree, _renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
         let limits = limits.width(self.width).height(self.height);
-        let size = limits.resolve(0.0, 0.0, 0.0);
+        let size = limits.resolve(0.0, 0.0, Size::new(0.0, 0.0));
 
         layout::Node::new(size)
     }
@@ -362,8 +363,8 @@ impl<'a, P: Param> Widget<ParamMessage, Theme, Renderer> for ParamSlider<'a, P> 
         match event {
             Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))
             | Event::Touch(touch::Event::FingerPressed { .. }) => {
-                if bounds.contains(cursor.position()) {
-                    let click = mouse::Click::new(cursor.position(), mouse::Button::Left, self.state.last_click);
+                if bounds.contains(cursor.position().unwrap()) {
+                    let click = mouse::Click::new(cursor.position().unwrap(), mouse::Button::Left, self.state.last_click);
                     self.state.last_click = Some(click);
                     if self.state.keyboard_modifiers.alt() {
                         // Alt+click should not start a drag, instead it should show the text entry
@@ -391,14 +392,14 @@ impl<'a, P: Param> Widget<ParamMessage, Theme, Renderer> for ParamSlider<'a, P> 
                         // When holding down shift while clicking on a parameter we want to
                         // granuarly edit the parameter without jumping to a new value
                         self.state.granular_drag_start_x_value =
-                            Some((cursor.position().x, self.param.modulated_normalized_value()));
+                            Some((cursor.position().unwrap().x, self.param.modulated_normalized_value()));
                     } else {
                         shell.publish(ParamMessage::BeginSetParameter(self.param.as_ptr()));
                         self.state.drag_active = true;
 
                         self.set_normalized_value(
                             shell,
-                            util::remap_rect_x_coordinate(&bounds, cursor.position().x),
+                            util::remap_rect_x_coordinate(&bounds, cursor.position().unwrap().x),
                         );
                         self.state.granular_drag_start_x_value = None;
                     }
@@ -427,7 +428,7 @@ impl<'a, P: Param> Widget<ParamMessage, Theme, Renderer> for ParamSlider<'a, P> 
                             .state
                             .granular_drag_start_x_value
                             .get_or_insert_with(|| {
-                                (cursor.position().x, self.param.modulated_normalized_value())
+                                (cursor.position().unwrap().x, self.param.modulated_normalized_value())
                             });
 
                         self.set_normalized_value(
@@ -435,7 +436,7 @@ impl<'a, P: Param> Widget<ParamMessage, Theme, Renderer> for ParamSlider<'a, P> 
                             util::remap_rect_x_coordinate(
                                 &bounds,
                                 util::remap_rect_x_t(&bounds, drag_start_value)
-                                    + (cursor.position().x - drag_start_x) * GRANULAR_DRAG_MULTIPLIER,
+                                    + (cursor.position().unwrap().x - drag_start_x) * GRANULAR_DRAG_MULTIPLIER,
                             ),
                         );
                     } else {
@@ -443,7 +444,7 @@ impl<'a, P: Param> Widget<ParamMessage, Theme, Renderer> for ParamSlider<'a, P> 
 
                         self.set_normalized_value(
                             shell,
-                            util::remap_rect_x_coordinate(&bounds, cursor.position().x),
+                            util::remap_rect_x_coordinate(&bounds, cursor.position().unwrap().x),
                         );
                     }
 
@@ -463,7 +464,7 @@ impl<'a, P: Param> Widget<ParamMessage, Theme, Renderer> for ParamSlider<'a, P> 
 
                     self.set_normalized_value(
                         shell,
-                        util::remap_rect_x_coordinate(&bounds, cursor.position().x),
+                        util::remap_rect_x_coordinate(&bounds, cursor.position().unwrap().x),
                     );
                 }
 
@@ -484,7 +485,7 @@ impl<'a, P: Param> Widget<ParamMessage, Theme, Renderer> for ParamSlider<'a, P> 
         _renderer: &Renderer,
     ) -> mouse::Interaction {
         let bounds = layout.bounds();
-        let is_mouse_over = bounds.contains(cursor.position());
+        let is_mouse_over = bounds.contains(cursor.position().unwrap());
 
         if is_mouse_over {
             mouse::Interaction::Pointer
@@ -511,7 +512,7 @@ impl<'a, P: Param> Widget<ParamMessage, Theme, Renderer> for ParamSlider<'a, P> 
             width: bounds.width - (BORDER_WIDTH * 2.0),
             height: bounds.height - (BORDER_WIDTH * 2.0),
         };
-        let is_mouse_over = bounds.contains(cursor.position());
+        let is_mouse_over = bounds.contains(cursor.position().unwrap());
 
         // The bar itself, show a different background color when the value is being edited or when
         // the mouse is hovering over it to indicate that it's interactive
@@ -584,40 +585,48 @@ impl<'a, P: Param> Widget<ParamMessage, Theme, Renderer> for ParamSlider<'a, P> 
             // To make it more readable (and because it looks cool), the parts that overlap with the
             // fill rect will be rendered in white while the rest will be rendered in black.
             let display_value = self.param.to_string();
-            let text_size = self.text_size.unwrap_or_else(|| renderer.default_size()) as f32;
+            let text_size = self.text_size.unwrap_or_else(|| renderer.default_size().0 as u16) as f32;
             let text_bounds = Rectangle {
                 x: bounds.center_x(),
                 y: bounds.center_y(),
                 ..bounds
             };
             renderer.fill_text(text::Text {
-                content: &display_value,
+                content: display_value.clone(),
                 font: self.font,
-                size: text_size,
-                bounds: text_bounds,
-                //color: style.text_color,
+                size: iced_baseview::Pixels(text_size),
+                bounds: text_bounds.size(),
+                //color: ,
                 horizontal_alignment: alignment::Horizontal::Center,
                 vertical_alignment: alignment::Vertical::Center,
                 line_height: LineHeight::default(),
                 shaping: text::Shaping::Basic,
                 wrapping: text::Wrapping::None,
-            });
+            },
+            text_bounds.position(),
+            style.text_color,
+            text_bounds
+            );
 
             // This will clip to the filled area
             renderer.with_layer(fill_rect, |renderer| {
                 let filled_text_color = Color::from_rgb8(80, 80, 80);
                 renderer.fill_text(text::Text {
-                    content: &display_value,
+                    content: display_value.clone(),
                     font: self.font,
-                    size: text_size,
-                    bounds: text_bounds,
+                    size: iced_baseview::Pixels(text_size),
+                    bounds: text_bounds.size(),
                     //color: filled_text_color,
                     horizontal_alignment: alignment::Horizontal::Center,
                     vertical_alignment: alignment::Vertical::Center,
                     line_height: LineHeight::default(),
                     shaping: text::Shaping::Basic,
                     wrapping: text::Wrapping::None,
-                });
+                },
+                text_bounds.position(),
+                filled_text_color,
+                text_bounds
+            );
             });
         }
     }
