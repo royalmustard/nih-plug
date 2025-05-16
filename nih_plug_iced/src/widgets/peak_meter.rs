@@ -20,6 +20,7 @@ use iced_baseview::Color;
 use iced_baseview::Element;
 use iced_baseview::Font;
 use iced_baseview::Length;
+use iced_baseview::Pixels;
 use iced_baseview::Rectangle;
 use iced_baseview::Renderer;
 use iced_baseview::Shadow;
@@ -29,6 +30,9 @@ use std::marker::PhantomData;
 use std::time::Duration;
 use std::time::Instant;
 
+
+use iced_baseview::core::text::Renderer as TextRenderer;
+use iced_baseview::core::Renderer as GraphicsRenderer;
 use crate::assets;
 
 
@@ -82,8 +86,8 @@ impl<'a, Message> PeakMeter<'a, Message> {
 
             hold_time: None,
 
-            width: Length::Units(180),
-            height: Length::Units(30),
+            width: Length::from(180),
+            height: Length::from(30),
             text_size: None,
             font: assets::NOTO_SANS_REGULAR,
 
@@ -158,7 +162,7 @@ where
 
         let text_size = self
             .text_size
-            .unwrap_or_else(|| (renderer.default_size() as f32 * 0.7).round() as u16);
+            .unwrap_or_else(|| (renderer.default_size().0 as f32 * 0.7).round() as u16);
 
         // We'll draw a simple horizontal for [-90, 20] dB where we'll treat -80 as -infinity, with
         // a label containing the tick markers below it. If `.hold_time()` was called then we'll
@@ -306,22 +310,27 @@ where
             } else {
                 tick_db.to_string()
             };
-            renderer.fill_text(text::Text {
-                content: &tick_text,
-                font: self.font,
-                size: text_size as f32,
-                bounds: Rectangle {
+            let text_rect =  Rectangle {
                     x: x_coordinate,
                     y: ticks_bounds.y + (ticks_bounds.height * 0.35),
                     ..ticks_bounds
-                },
-                //color: style.text_color,
+                };
+            renderer.fill_text(text::Text {
+                content: tick_text.clone(),
+                font: self.font,
+                size: Pixels(text_size as f32),
+                bounds:text_rect.size(),
+                //color: ,
                 horizontal_alignment: alignment::Horizontal::Center,
                 vertical_alignment: alignment::Vertical::Top,
                 line_height: LineHeight::default(),
                 shaping: Shaping::Basic,
                 wrapping: Wrapping::None
-            });
+            },
+            text_rect.position(),
+            style.text_color,
+            text_rect
+            );
         }
 
         // Every proper graph needs a unit label
