@@ -335,24 +335,29 @@ where
 
         // Every proper graph needs a unit label
         let zero_db_x_coordinate = db_to_x_coord(0.0);
-        let zero_db_text_width = renderer.measure_width("0", text_size, self.font);
+        let txt_bounds = Rectangle {
+                x: zero_db_x_coordinate +  (text_size as f32 * 0.2), //(zero_db_text_width / 2.0) +
+                y: ticks_bounds.y + (ticks_bounds.height * 0.35),
+                ..ticks_bounds
+            };
+        //let zero_db_text_width = renderer.measure_width("0", text_size, self.font);
         renderer.fill_text(text::Text {
             // The spacing looks a bit off if we start with a space here so we'll add a little
             // offset to the x-coordinate instead
-            content: "dBFS",
+            content: "dBFS".to_string(),
             font: self.font,
-            size: text_size as f32,
-            bounds: Rectangle {
-                x: zero_db_x_coordinate + (zero_db_text_width / 2.0) + (text_size as f32 * 0.2),
-                y: ticks_bounds.y + (ticks_bounds.height * 0.35),
-                ..ticks_bounds
-            },
+            size: Pixels(text_size as f32),
+            bounds: txt_bounds.size(),
             horizontal_alignment: alignment::Horizontal::Left,
             vertical_alignment: alignment::Vertical::Top,
             line_height: LineHeight::default(),
             shaping: Shaping::Basic,
             wrapping: Wrapping::None
-        });
+            },
+            txt_bounds.position(),
+            Color::BLACK,
+            txt_bounds
+        );
     }
     
     fn size(&self) -> iced_baseview::Size<Length> {
