@@ -18,6 +18,7 @@ use iced_baseview::widget::text_input::Status;
 use iced_baseview::widget::TextInput;
 use iced_baseview::Vector;
 use nih_plug::prelude::Param;
+use nih_plug_assets::fonts;
 use std::borrow::Borrow;
 
 use iced_baseview::alignment;
@@ -108,7 +109,7 @@ enum TextInputMessage {
     Submit,
 }
 
-/// The default text input style with the border removed.
+// The default text input style with the border removed.
 // struct TextInputStyle;
 
 // impl widget::text_input::StyleSheet for TextInputStyle {
@@ -161,7 +162,7 @@ impl<'a, P: Param> ParamSlider<'a, P> {
             width: Length::from(180),
             height: Length::from(30),
             text_size: None,
-            font: assets::NOTO_SANS_REGULAR,
+            font: Default::default(),
         }
     }
 

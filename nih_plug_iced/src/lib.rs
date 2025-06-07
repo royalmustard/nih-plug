@@ -194,7 +194,7 @@ pub trait IcedEditor: 'static + Send + Sync + Sized {
     }
 
     /// See [`Application::view`].
-    fn view(&mut self) -> Element<'_, Self::Message>;
+    fn view(&self) -> Element<'_, Self::Message>;
 
     /// See [`Application::background_color`].
     fn background_color(&self) -> Color {

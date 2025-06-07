@@ -89,7 +89,7 @@ impl<'a, Message> PeakMeter<'a, Message> {
             width: Length::from(180),
             height: Length::from(30),
             text_size: None,
-            font: assets::NOTO_SANS_REGULAR,
+            font: Default::default(),
 
             _phantom: PhantomData,
         }

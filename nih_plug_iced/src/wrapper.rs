@@ -2,7 +2,7 @@
 //! `nih_plug_iced`.
 
 use crossbeam::channel;
-use iced_baseview::{futures::{futures::SinkExt, stream}, Theme};
+use iced_baseview::{futures::{futures::SinkExt, stream}, DefaultStyle, Theme};
 use nih_plug::prelude::GuiContext;
 use std::sync::Arc;
 
@@ -202,7 +202,7 @@ impl<E: IcedEditor> Application for IcedEditorWrapperApplication<E> {
     
     
     fn theme(&self) -> Self::Theme {
-        
+        Theme::Light
     }
     
     fn title(&self) -> String {

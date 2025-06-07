@@ -10,7 +10,7 @@ use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
-use crate::{wrapper, IcedEditor, IcedState, ParameterUpdate};
+use crate::{wrapper::{self, IcedEditorWrapperApplication}, IcedEditor, IcedState, ParameterUpdate};
 
 /// An [`Editor`] implementation that renders an iced [`Application`].
 pub(crate) struct IcedEditorWrapper<E: IcedEditor> {
@@ -63,7 +63,7 @@ impl<E: IcedEditor> Editor for IcedEditorWrapper<E> {
 
         // TODO: iced_baseview does not have gracefuly error handling for context creation failures.
         //       This will panic if the context could not be created.
-        let window = iced_baseview::open_parented(
+        let window = iced_baseview::open_parented::<IcedEditorWrapperApplication<E>, ParentWindowHandleAdapter>(
             &ParentWindowHandleAdapter(parent),
             (
                 context,
@@ -110,7 +110,7 @@ impl<E: IcedEditor> Editor for IcedEditorWrapper<E> {
                     always_redraw: true,
                 },
                 graphics_settings: GraphicsSettings::default(),
-                fonts: fonts::NOTO_SANS_REGULAR,
+                fonts: vec![fonts::NOTO_SANS_REGULAR.into()],
             },
         );
 
