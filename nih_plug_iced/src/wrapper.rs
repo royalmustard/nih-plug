@@ -2,7 +2,7 @@
 //! `nih_plug_iced`.
 
 use crossbeam::channel;
-use iced_baseview::Theme;
+use iced_baseview::{futures::{futures::SinkExt, stream}, Theme};
 use nih_plug::prelude::GuiContext;
 use std::sync::Arc;
 
@@ -97,14 +97,40 @@ impl<E: IcedEditor> Application for IcedEditorWrapperApplication<E> {
         window_subs: &mut WindowSubs<Self::Message>,
     ) -> Subscription<Self::Message> {
         // Since we're wrapping around `E::Message`, we need to do this transformation ourselves
-        let mut editor_window_subs = WindowSubs {
+        let mut editor_window_subs = WindowSubs{
             on_frame: match &window_subs.on_frame {
-                Some(Message::EditorMessage(message)) => Some(message.clone()),
-                _ => None,
+                Some(msg_producer) =>  {
+                    let local_msg_producer = msg_producer.clone();
+                    Some(Arc::new(move || {
+                   if let Some(msg) = local_msg_producer()
+                   {
+                        match msg
+                        {
+                            Message::EditorMessage(inner_msg) => return Some(inner_msg),
+                            _ => return None
+                        }
+                   }
+                   return None
+                }))
+                },
+                _ => None
             },
             on_window_will_close: match &window_subs.on_window_will_close {
-                Some(Message::EditorMessage(message)) => Some(message.clone()),
-                _ => None,
+                 Some(msg_producer) =>  {
+                    let local_msg_producer = msg_producer.clone();
+                    Some(Arc::new(move || {
+                   if let Some(msg) = local_msg_producer()
+                   {
+                        match msg
+                        {
+                            Message::EditorMessage(inner_msg) => return Some(inner_msg),
+                            _ => return None
+                        }
+                   }
+                   return None
+                }))
+                },
+                _ => None
             },
         };
         let rcv = self.parameter_updates_receiver.clone();
@@ -113,26 +139,42 @@ impl<E: IcedEditor> Application for IcedEditorWrapperApplication<E> {
             // into a stream that doesn't require consuming that receiver (which wouldn't work in
             // this case since the subscriptions function gets called repeatedly). So we'll just use
             // a crossbeam queue and this unfold instead.
-            Subscription::run_with_id(
-                "parameter updates",
-                || match rcv.try_recv() {
-                    Ok(_) => futures::futures::future::ready(
-                        Some(Message::ParameterUpdate))
-                    .boxed(),
-                    Err(_) => futures::futures::future::pending().boxed(),
-                },
-            ),
-            self.editor
-                .subscription(&mut editor_window_subs)
-                .map(Message::EditorMessage),
+            Subscription::run_with_id("param updates", stream::channel(100, |mut output| async move {
+                loop {
+                    match rcv.try_recv() {
+                    Ok(_) => {output.send(Message::ParameterUpdate).await;},
+                    Err(_) => ()
+                    }
+
+
+                }
+            })),
+            // Subscription::run_with_id(
+            //     "parameter updates",
+            //     || match rcv.try_recv() {
+            //         Ok(_) => futures::futures::future::ready(
+            //             Some(Message::ParameterUpdate))
+            //         .boxed(),
+            //         Err(_) => futures::futures::future::pending().boxed(),
+            //     },
+            // ),
+
+            self.editor.subscription(&mut editor_window_subs).map(Message::EditorMessage)
         ]);
 
-        if let Some(message) = editor_window_subs.on_frame {
-            window_subs.on_frame = Some(Message::EditorMessage(message));
-        }
-        if let Some(message) = editor_window_subs.on_window_will_close {
-            window_subs.on_window_will_close = Some(Message::EditorMessage(message));
-        }
+        if let Some(message_producer) = editor_window_subs.on_frame {
+            let window_sub_message_producer = message_producer.clone();
+            window_subs.on_frame = Some(Arc::new(move|| {
+                window_sub_message_producer().map(Message::EditorMessage)
+            }));
+        };
+        if let Some(message_producer) = editor_window_subs.on_window_will_close {
+            let window_sub_message_producer = message_producer.clone();
+            window_subs.on_frame = Some(Arc::new(move|| {
+                window_sub_message_producer().map(Message::EditorMessage)
+            }));
+        };
+        
 
         subscription
     }
