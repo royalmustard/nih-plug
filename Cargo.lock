@@ -2310,6 +2310,7 @@ name = "gain_gui_iced"
 version = "0.1.0"
 dependencies = [
  "atomic_float",
+ "atomic_refcell",
  "nih_plug",
  "nih_plug_iced",
 ]

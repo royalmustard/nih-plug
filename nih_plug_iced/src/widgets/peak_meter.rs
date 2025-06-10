@@ -1,5 +1,6 @@
 //! A super simple peak meter widget.
 
+use atomic_refcell::AtomicRefCell;
 use crossbeam::atomic::AtomicCell;
 use iced_baseview::alignment;
 use iced_baseview::border::Radius;
@@ -27,13 +28,14 @@ use iced_baseview::Shadow;
 use iced_baseview::Size;
 use iced_baseview::Theme;
 use std::marker::PhantomData;
+use std::sync::Arc;
 use std::time::Duration;
 use std::time::Instant;
 
 
 use iced_baseview::core::text::Renderer as TextRenderer;
 use iced_baseview::core::Renderer as GraphicsRenderer;
-use crate::assets;
+
 
 
 
@@ -47,8 +49,8 @@ const TICK_WIDTH: f32 = 1.0;
 ///
 /// TODO: There are currently no styling options at all
 /// TODO: Vertical peak meter, this is just a proof of concept to fit the gain GUI example.
-pub struct PeakMeter<'a, Message> {
-    state: &'a mut State,
+pub struct PeakMeter<Message> {
+    state: Arc<AtomicRefCell<State>>,
 
     /// The current measured value in decibel.
     current_value_db: f32,
@@ -74,11 +76,11 @@ pub struct State {
     last_held_peak_value: AtomicCell<Option<Instant>>,
 }
 
-impl<'a, Message> PeakMeter<'a, Message> {
+impl<'a, Message> PeakMeter<Message> {
     /// Creates a new [`PeakMeter`] using the current measurement in decibel. This measurement can
     /// already have some form of smoothing applied to it. This peak slider widget can draw the last
     /// hold value for you.
-    pub fn new(state: &'a mut State, value_db: f32) -> Self {
+    pub fn new(state: Arc<AtomicRefCell<State>>, value_db: f32) -> Self {
         Self {
             state,
 
@@ -126,7 +128,7 @@ impl<'a, Message> PeakMeter<'a, Message> {
     }
 }
 
-impl<'a, Message> Widget<Message, Theme, Renderer> for PeakMeter<'a, Message>
+impl<'a, Message> Widget<Message, Theme, Renderer> for PeakMeter<Message>
 where
     Message: Clone,
 {
@@ -219,17 +221,18 @@ where
             );
         }
 
+        let state = self.state.borrow_mut();
         // Draw the hold peak value if the hold time option has been set
         if let Some(hold_time) = self.hold_time {
             let now = Instant::now();
-            let mut held_peak_value_db = self.state.held_peak_value_db.load();
-            let last_peak_value = self.state.last_held_peak_value.load();
+            let mut held_peak_value_db = state.held_peak_value_db.load();
+            let last_peak_value = state.last_held_peak_value.load();
             if self.current_value_db >= held_peak_value_db
                 || last_peak_value.is_none()
                 || now > last_peak_value.unwrap() + hold_time
             {
-                self.state.held_peak_value_db.store(self.current_value_db);
-                self.state.last_held_peak_value.store(Some(now));
+                state.held_peak_value_db.store(self.current_value_db);
+                state.last_held_peak_value.store(Some(now));
                 held_peak_value_db = self.current_value_db;
             }
 
@@ -365,11 +368,11 @@ where
     }
 }
 
-impl<'a, Message> From<PeakMeter<'a, Message>> for Element<'a, Message>
+impl<'a, Message> From<PeakMeter<Message>> for Element<'a, Message>
 where
     Message: 'a + Clone,
 {
-    fn from(widget: PeakMeter<'a, Message>) -> Self {
+    fn from(widget: PeakMeter<Message>) -> Self {
         Element::new(widget)
     }
 }

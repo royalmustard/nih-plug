@@ -15,3 +15,4 @@ nih_plug = { path = "../../../", features = ["assert_process_allocs"] }
 nih_plug_iced = { path = "../../../nih_plug_iced" }
 
 atomic_float = "0.1"
+atomic_refcell = "0.1"
