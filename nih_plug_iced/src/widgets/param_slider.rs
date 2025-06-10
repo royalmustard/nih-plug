@@ -17,6 +17,7 @@ use iced_baseview::keyboard;
 use iced_baseview::widget;
 use iced_baseview::widget::text_input::Status;
 use iced_baseview::widget::TextInput;
+use iced_baseview::Point;
 use iced_baseview::Vector;
 use nih_plug::prelude::Param;
 use std::borrow::Borrow;
@@ -487,7 +488,7 @@ impl<'a, P: Param> Widget<ParamMessage, Theme, Renderer> for ParamSlider<'a, P> 
         _renderer: &Renderer,
     ) -> mouse::Interaction {
         let bounds = layout.bounds();
-        let is_mouse_over = bounds.contains(cursor.position().unwrap());
+        let is_mouse_over = bounds.contains(cursor.position().unwrap_or(Point::new(0.0, 0.0)));
 
         if is_mouse_over {
             mouse::Interaction::Pointer
@@ -515,7 +516,7 @@ impl<'a, P: Param> Widget<ParamMessage, Theme, Renderer> for ParamSlider<'a, P> 
             width: bounds.width - (BORDER_WIDTH * 2.0),
             height: bounds.height - (BORDER_WIDTH * 2.0),
         };
-        let is_mouse_over = bounds.contains(cursor.position().unwrap());
+        let is_mouse_over = bounds.contains(cursor.position().unwrap_or(Point::new(0.0, 0.0)));
 
         // The bar itself, show a different background color when the value is being edited or when
         // the mouse is hovering over it to indicate that it's interactive

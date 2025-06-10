@@ -364,7 +364,7 @@ where
     }
     
     fn size(&self) -> iced_baseview::Size<Length> {
-        todo!()
+        Size::new(self.width, self.height)
     }
 }
 

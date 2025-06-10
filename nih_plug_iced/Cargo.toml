@@ -23,7 +23,7 @@ description = "An adapter to use iced GUIs with NIH-plug"
 #opengl = ["iced_baseview/glow"]
 
 # Enables a debug view in native platforms (press F12)
-#debug = ["iced_baseview/debug"]
+debug = ["iced_baseview/debug"]
 
 # # Enables the `Image` widget, only supported by the wgpu backend
 # wgpu_image = ["iced_baseview/wgpu_image"]
