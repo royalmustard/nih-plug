@@ -8,11 +8,14 @@ use iced_baseview::core::layout;
 use iced_baseview::core::renderer::Style;
 use iced_baseview::core::text;
 use iced_baseview::core::text::LineHeight;
+use iced_baseview::core::text::Paragraph as ParagraphTrait;
 use iced_baseview::core::text::Shaping;
 use iced_baseview::core::text::Wrapping;
+use iced_baseview::core::Text;
 use iced_baseview::core::widget::Tree;
 use iced_baseview::core::Layout;
 use iced_baseview::core::Widget;
+use iced_baseview::graphics::text::Paragraph;
 use iced_baseview::mouse::Cursor;
 use iced_baseview::core::renderer;
 use iced_baseview::Background;
@@ -27,6 +30,7 @@ use iced_baseview::Renderer;
 use iced_baseview::Shadow;
 use iced_baseview::Size;
 use iced_baseview::Theme;
+use nih_plug::nih_dbg;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use std::time::Duration;
@@ -152,6 +156,7 @@ where
         _viewport: &Rectangle,
     ) {
         let bounds = layout.bounds();
+        nih_dbg!(bounds);
         let bar_bounds = Rectangle {
             height: bounds.height / 2.0,
             ..bounds
@@ -164,7 +169,7 @@ where
 
         let text_size = self
             .text_size
-            .unwrap_or_else(|| (renderer.default_size().0 as f32 * 0.7).round() as u16);
+            .unwrap_or_else(|| (renderer.default_size().0 * 0.7).round() as u16);
 
         // We'll draw a simple horizontal for [-90, 20] dB where we'll treat -80 as -infinity, with
         // a label containing the tick markers below it. If `.hold_time()` was called then we'll
@@ -318,8 +323,53 @@ where
                     y: ticks_bounds.y + (ticks_bounds.height * 0.35),
                     ..ticks_bounds
                 };
+            
+            let tick2 = tick_text.clone();
+            let tick_Text = text::Text {
+                content: tick2.as_str(),
+                font: self.font,
+                size: Pixels(text_size as f32),
+                bounds:text_rect.size(),
+                //color: ,
+                horizontal_alignment: alignment::Horizontal::Center,
+                vertical_alignment: alignment::Vertical::Top,
+                line_height: LineHeight::default(),
+                shaping: Shaping::Basic,
+                wrapping: Wrapping::None
+            };
+            let paragraph = Paragraph::with_text(tick_Text);
+            let par_bounds = paragraph.min_bounds();
+            let par_rect = Rectangle {
+                    x: x_coordinate - par_bounds.width,
+                    y: ticks_bounds.y + (ticks_bounds.height * 0.35),
+                    ..ticks_bounds
+                };
+             //Debug border rendering
+            // renderer.fill_quad( renderer::Quad {
+            //         bounds: par_rect,
+            //         border: Border{
+            //             color: Color::BLACK,
+            //             width: 1.0,
+            //             radius: Radius
+            //             {
+            //                 top_left: 0.0,
+            //                 top_right: 0.0,
+            //                 bottom_left: 0.0,
+            //                 bottom_right: 0.0
+            //             }
+            //         },
+            //         shadow: Shadow::default()
+            //     },
+            //     Background::Color(Color::TRANSPARENT));
+            
+
+
+            //Buckle up, this one is great:
+            //First we need to construc a paragraph so we can estimate the size of the text
+            //Then we need to use fill_text because fill_paragraph requires us to retain the paragraph somwhere (which i dont want to do)
+            //We also need to construc a new Text object because paragraph wants &str and text wants String
             renderer.fill_text(text::Text {
-                content: tick_text.clone(),
+                content: tick_text,
                 font: self.font,
                 size: Pixels(text_size as f32),
                 bounds:text_rect.size(),
@@ -332,10 +382,12 @@ where
             },
             text_rect.position(),
             style.text_color,
-            text_rect
+            par_rect
             );
-        }
 
+           
+        }
+        
         // Every proper graph needs a unit label
         let zero_db_x_coordinate = db_to_x_coord(0.0);
         let txt_bounds = Rectangle {
@@ -343,8 +395,29 @@ where
                 y: ticks_bounds.y + (ticks_bounds.height * 0.35),
                 ..ticks_bounds
             };
+        let par_text = text::Text {
+            // The spacing looks a bit off if we start with a space here so we'll add a little
+            // offset to the x-coordinate instead
+            content: "dBFS",
+            font: self.font,
+            size: Pixels(text_size as f32),
+            bounds: txt_bounds.size(),
+            horizontal_alignment: alignment::Horizontal::Left,
+            vertical_alignment: alignment::Vertical::Top,
+            line_height: LineHeight::default(),
+            shaping: Shaping::Basic,
+            wrapping: Wrapping::None
+           };
+        let paragraph = Paragraph::with_text(par_text);
+        let par_bounds = paragraph.min_bounds();
+        let txt_bounds = Rectangle {
+                x: zero_db_x_coordinate +  (text_size as f32 * 0.2) + (par_bounds.width / 2.0),
+                y: ticks_bounds.y + (ticks_bounds.height * 0.35),
+                ..ticks_bounds
+            };
         //let zero_db_text_width = renderer.measure_width("0", text_size, self.font);
-        renderer.fill_text(text::Text {
+        renderer.fill_text(
+            text::Text {
             // The spacing looks a bit off if we start with a space here so we'll add a little
             // offset to the x-coordinate instead
             content: "dBFS".to_string(),
@@ -356,7 +429,7 @@ where
             line_height: LineHeight::default(),
             shaping: Shaping::Basic,
             wrapping: Wrapping::None
-            },
+           },
             txt_bounds.position(),
             Color::BLACK,
             txt_bounds
