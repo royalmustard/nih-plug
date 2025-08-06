@@ -11,7 +11,6 @@ use iced_baseview::core::text::LineHeight;
 use iced_baseview::core::text::Paragraph as ParagraphTrait;
 use iced_baseview::core::text::Shaping;
 use iced_baseview::core::text::Wrapping;
-use iced_baseview::core::Text;
 use iced_baseview::core::widget::Tree;
 use iced_baseview::core::Layout;
 use iced_baseview::core::Widget;
@@ -138,7 +137,7 @@ where
 {
 
 
-    fn layout(&self, tree: &mut Tree, _renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
+    fn layout(&self, _tree: &mut Tree, _renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
         let limits = limits.width(self.width).height(self.height);
         let size = limits.resolve(self.width, self.height, Size::ZERO);
 
@@ -147,9 +146,9 @@ where
 
     fn draw(
         &self,
-        tree: &Tree,
+        _tree: &Tree,
         renderer: &mut Renderer,
-        theme: &Theme,
+        _theme: &Theme,
         style: &Style,
         layout: Layout<'_>,
         _cursor_position: Cursor,
@@ -325,7 +324,7 @@ where
                 };
             
             let tick2 = tick_text.clone();
-            let tick_Text = text::Text {
+            let tick_text_measure = text::Text {
                 content: tick2.as_str(),
                 font: self.font,
                 size: Pixels(text_size as f32),
@@ -337,7 +336,7 @@ where
                 shaping: Shaping::Basic,
                 wrapping: Wrapping::None
             };
-            let paragraph = Paragraph::with_text(tick_Text);
+            let paragraph = Paragraph::with_text(tick_text_measure);
             let par_bounds = paragraph.min_bounds();
             let par_rect = Rectangle {
                     x: x_coordinate - par_bounds.width,

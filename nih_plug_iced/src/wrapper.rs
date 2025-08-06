@@ -6,11 +6,10 @@ use iced_baseview::{futures::{futures::SinkExt, stream}, DefaultStyle, Theme};
 use nih_plug::prelude::GuiContext;
 use std::sync::Arc;
 
-use futures::futures::FutureExt;
 
 
 use crate::{
-    futures, Application, Task, Element, IcedEditor, ParameterUpdate,
+    Application, Task, Element, IcedEditor, ParameterUpdate,
     Subscription, WindowScalePolicy, WindowSubs,
 };
 
@@ -142,7 +141,7 @@ impl<E: IcedEditor> Application for IcedEditorWrapperApplication<E> {
             Subscription::run_with_id("param updates", stream::channel(100, |mut output| async move {
                 loop {
                     match rcv.try_recv() {
-                    Ok(_) => {output.send(Message::ParameterUpdate).await;},
+                    Ok(_) => {output.send(Message::ParameterUpdate).await.unwrap();},
                     Err(_) => ()
                     }
 

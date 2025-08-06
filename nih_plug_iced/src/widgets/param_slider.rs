@@ -1,6 +1,6 @@
 //! A slider that integrates with NIH-plug's [`Param`] types.
 
-use atomic_refcell::AtomicRef;
+
 use atomic_refcell::AtomicRefCell;
 use iced_baseview::core::text::LineHeight;
 use iced_baseview::core::touch;
@@ -55,7 +55,6 @@ use iced_baseview::Theme;
 //     Element, Event, Font, Layout, Length, Point, Rectangle, Shell, Size, TextInput, Vector, Widget,
 // };
 
-use crate::assets;
 
 use super::util;
 use super::ParamMessage;
@@ -72,7 +71,7 @@ const BORDER_WIDTH: f32 = 1.0;
 /// TODO: There are currently no styling options at all
 /// TODO: Handle scrolling for steps (and shift+scroll for smaller steps?)
 pub struct ParamSlider<'a, P: Param> {
-    state: Arc<AtomicRefCell<State>>,
+    state: Arc<AtomicRefCell<&'a mut State>>,
 
     param: &'a P,
 
@@ -141,7 +140,7 @@ enum TextInputMessage {
 //     }
 // }
 
-fn text_input_style(theme: &Theme, status: Status) -> widget::text_input::Style
+fn text_input_style(_theme: &Theme, _status: Status) -> widget::text_input::Style
 {
     widget::text_input::Style {
         background: Background::Color(Color::TRANSPARENT),
@@ -155,9 +154,9 @@ fn text_input_style(theme: &Theme, status: Status) -> widget::text_input::Style
 
 impl<'a, P: Param> ParamSlider<'a, P> {
     /// Creates a new [`ParamSlider`] for the given parameter.
-    pub fn new(state: Arc<AtomicRefCell<State>>, param: &'a P) -> Self {
+    pub fn new(state:&'a mut State, param: &'a P) -> Self {
         Self {
-            state,
+            state: Arc::new(AtomicRefCell::new(state)),
 
             param,
 
@@ -274,7 +273,7 @@ impl<'a, P: Param> Widget<ParamMessage, Theme, Renderer> for ParamSlider<'a, P> 
         Size { width: self.width, height: self.height }
     }
 
-    fn layout(&self, tree: &mut Tree, _renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
+    fn layout(&self, _tree: &mut Tree, _renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
         let limits = limits.width(self.width).height(self.height);
         let size = limits.resolve(0.0, 0.0, Size::new(0.0, 0.0));
 
@@ -481,7 +480,7 @@ impl<'a, P: Param> Widget<ParamMessage, Theme, Renderer> for ParamSlider<'a, P> 
 
     fn mouse_interaction(
         &self,
-        state: &Tree,
+        _state: &Tree,
         layout: Layout<'_>,
         cursor: Cursor,
         _viewport: &Rectangle,

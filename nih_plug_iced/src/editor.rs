@@ -10,7 +10,7 @@ use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
-use crate::{wrapper::{self, IcedEditorWrapperApplication}, IcedEditor, IcedState, ParameterUpdate};
+use crate::{wrapper::IcedEditorWrapperApplication, IcedEditor, IcedState, ParameterUpdate};
 
 /// An [`Editor`] implementation that renders an iced [`Application`].
 pub(crate) struct IcedEditorWrapper<E: IcedEditor> {
