@@ -1,18 +1,18 @@
 //! Binary assets for use with `nih_plug_iced`.
 
 
-use iced_baseview::Font;
-use iced_baseview::font;
+// use iced_baseview::Font;
+// use iced_baseview::font;
 
-// This module provides a re-export and simple font wrappers around the re-exported fonts.
-pub use nih_plug_assets::*;
+// // This module provides a re-export and simple font wrappers around the re-exported fonts.
+// pub use nih_plug_assets::*;
 
 // pub const NOTO_SANS_REGULAR: Font = Font:: {
 //     name: "Noto Sans Regular",
 //     bytes: fonts::NOTO_SANS_REGULAR,
 // };
 
-// pub const NOTO_SANS_REGULAR_ITALIC: Font = font::load(fonts::NOTO_SANS_REGULAR_ITALIC).unwr; 
+// pub const NOTO_SANS_REGULAR_ITALIC: Font = font::load(fonts::NOTO_SANS_REGULAR_ITALIC).unwrap(); 
 // {
 //     name: "Noto Sans Regular Italic",
 //     bytes: 

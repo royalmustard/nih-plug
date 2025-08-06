@@ -5,7 +5,7 @@ use crossbeam::atomic::AtomicCell;
 use crossbeam::channel;
 pub use iced_baseview::*;
 use nih_plug::prelude::{Editor, GuiContext, ParentWindowHandle};
-use nih_plug_assets::fonts;
+use nih_plug_assets::fonts::*;
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
@@ -110,7 +110,14 @@ impl<E: IcedEditor> Editor for IcedEditorWrapper<E> {
                     always_redraw: true,
                 },
                 graphics_settings: GraphicsSettings::default(),
-                fonts: vec![fonts::NOTO_SANS_REGULAR.into()],
+                fonts: vec![NOTO_SANS_BOLD.into(), 
+                            NOTO_SANS_BOLD_ITALIC.into(), 
+                            NOTO_SANS_LIGHT.into(), 
+                            NOTO_SANS_LIGHT_ITALIC.into(), 
+                            NOTO_SANS_REGULAR.into(), 
+                            NOTO_SANS_REGULAR_ITALIC.into(), 
+                            NOTO_SANS_THIN.into(),
+                            NOTO_SANS_THIN_ITALIC.into()],
             },
         );
 
