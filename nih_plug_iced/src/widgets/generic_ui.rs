@@ -29,7 +29,7 @@ pub trait ParamWidget {
     /// Create an [`Element`] for a widget for the specified parameter.
     fn into_widget_element<'a, P: Param>(
         param: &'a P,
-        state: &'a mut Self::State,
+        state: Arc<AtomicRefCell<Self::State>>,
     ) -> Element<'a, ParamMessage>;
 
     /// The same as [`into_widget_element()`][Self::into_widget_element()], but for a `ParamPtr`.
@@ -39,7 +39,7 @@ pub trait ParamWidget {
     /// Undefined behavior of the `ParamPtr` does not point to a valid parameter.
     unsafe fn into_widget_element_raw<'a>(
         param: &ParamPtr,
-        state: &'a mut Self::State,
+        state: Arc<AtomicRefCell<Self::State>>,
     ) -> Element<'a, ParamMessage> {
         match param {
             ParamPtr::FloatParam(p) => Self::into_widget_element(&**p, state),
@@ -283,7 +283,7 @@ impl ParamWidget for GenericSlider {
 
     fn into_widget_element<'a, P: Param>(
         param: &'a P,
-        state: &'a mut Self::State,
+        state: Arc<AtomicRefCell<Self::State>>,
     ) -> Element<'a, ParamMessage> {
         ParamSlider::new(state, param).into()
     }

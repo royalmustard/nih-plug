@@ -71,7 +71,7 @@ const BORDER_WIDTH: f32 = 1.0;
 /// TODO: There are currently no styling options at all
 /// TODO: Handle scrolling for steps (and shift+scroll for smaller steps?)
 pub struct ParamSlider<'a, P: Param> {
-    state: Arc<AtomicRefCell<&'a mut State>>,
+    state: Arc<AtomicRefCell<State>>,
 
     param: &'a P,
 
@@ -154,9 +154,9 @@ fn text_input_style(_theme: &Theme, _status: Status) -> widget::text_input::Styl
 
 impl<'a, P: Param> ParamSlider<'a, P> {
     /// Creates a new [`ParamSlider`] for the given parameter.
-    pub fn new(state:&'a mut State, param: &'a P) -> Self {
+    pub fn new(state:Arc<AtomicRefCell<State>>, param: &'a P) -> Self {
         Self {
-            state: Arc::new(AtomicRefCell::new(state)),
+            state,
 
             param,
 

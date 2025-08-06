@@ -78,24 +78,23 @@ impl IcedEditor for GainEditor {
     }
 
     fn view(&self) -> Element<Self::Message> {
-        //let slider_state = self.gain_slider_state.clone().lock().unwrap().borrow_mut();
+        
         Column::new()
             .align_x(Alignment::Center)
             .push(
-                Text::new("Gain GUI")
-                    //.font(assets::NOTO_SANS_LIGHT)
+                Text::new("Gain GUI").font(Font::with_name("NotoSans-Light"))
                     .size(40)
                     .height(Length::from(50))
                     .width(Length::Fill)
-                    //.horizontal_alignment(alignment::Horizontal::Center)
-                    //.vertical_alignment(alignment::Vertical::Bottom),
+                    .align_x(alignment::Horizontal::Center)
+                    .align_y(alignment::Vertical::Bottom)
             )
             .push(
                 Text::new("Gain")
                     .height(Length::from(20))
                     .width(Length::Fill)
-                    // .horizontal_alignment(alignment::Horizontal::Center)
-                    // .vertical_alignment(alignment::Vertical::Center),
+                    .align_x(alignment::Horizontal::Center)
+                    .align_y(alignment::Vertical::Center)
             )
             .push(
                 nih_widgets::ParamSlider::new(self.gain_slider_state.clone(), &self.params.gain)
