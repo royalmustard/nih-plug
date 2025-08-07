@@ -608,8 +608,10 @@ impl<'a, P: Param> Widget<ParamMessage, Theme, Renderer> for ParamSlider<'a, P> 
             },
             text_bounds.position(),
             style.text_color,
-            text_bounds
+            bounds
             );
+
+            
 
             // This will clip to the filled area
             renderer.with_layer(fill_rect, |renderer| {
