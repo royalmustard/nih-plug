@@ -589,11 +589,9 @@ impl<'a, P: Param> Widget<ParamMessage, Theme, Renderer> for ParamSlider<'a, P> 
             // fill rect will be rendered in white while the rest will be rendered in black.
             let display_value = self.param.to_string();
             let text_size = self.text_size.unwrap_or_else(|| renderer.default_size().0 as u16) as f32;
-            let text_bounds = Rectangle {
-                x: bounds.center_x(),
-                y: bounds.center_y(),
-                ..bounds
-            };
+            let text_bounds = bounds;
+
+            let text_position = (bounds.center_x(), bounds.center_y()).into();
             renderer.fill_text(text::Text {
                 content: display_value.clone(),
                 font: self.font,
@@ -606,16 +604,15 @@ impl<'a, P: Param> Widget<ParamMessage, Theme, Renderer> for ParamSlider<'a, P> 
                 shaping: text::Shaping::Basic,
                 wrapping: text::Wrapping::None,
             },
-            text_bounds.position(),
+            text_position,
             style.text_color,
             bounds
             );
 
-            
 
             // This will clip to the filled area
-            renderer.with_layer(fill_rect, |renderer| {
-                let filled_text_color = Color::from_rgb8(80, 80, 80);
+
+                let filled_text_color = Color::from_rgb8(255-10, 255-10, 255-10);
                 renderer.fill_text(text::Text {
                     content: display_value.clone(),
                     font: self.font,
@@ -628,11 +625,11 @@ impl<'a, P: Param> Widget<ParamMessage, Theme, Renderer> for ParamSlider<'a, P> 
                     shaping: text::Shaping::Basic,
                     wrapping: text::Wrapping::None,
                 },
-                text_bounds.position(),
+                text_position,
                 filled_text_color,
-                text_bounds
+                fill_rect
             );
-            });
+
         }
     }
     
