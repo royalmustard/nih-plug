@@ -572,18 +572,23 @@ impl<'a, P: Param> Widget<ParamMessage, Theme, Renderer> for ParamSlider<'a, P> 
                 width: (fill_end_x - fill_start_x).abs(),
                 ..bounds_without_borders
             };
-            renderer.fill_quad(
-                renderer::Quad {
-                    bounds: fill_rect,
-                    border: Border{
-                        color: Color::TRANSPARENT,
-                        width: 0.0,
-                        radius: Default::default()
-                    }, 
-                    shadow: Default::default()
-                },
-                fill_color,
-            );
+
+
+            //We need this check because the skia backend panics if the width is 0, which happes if the parameter is at the default value
+            //Then we dont need to draw the filled bar anyways
+            if fill_rect.width.is_normal()
+            {
+                renderer.fill_quad(
+                    renderer::Quad {
+                        bounds: fill_rect,
+                        border: Default::default(), 
+                        shadow: Default::default()
+                    },
+                    fill_color,
+                );
+            }
+
+           
 
             // To make it more readable (and because it looks cool), the parts that overlap with the
             // fill rect will be rendered in white while the rest will be rendered in black.
